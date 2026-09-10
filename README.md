@@ -1,102 +1,130 @@
-# Expense Tracker
+# 💸 Expense Tracker
 
-[![React Native](https://img.shields.io/badge/React%20Native-0.76+-blue.svg)](https://reactnative.dev/)
-[![Expo](https://img.shields.io/badge/Expo-SDK%2052-black.svg)](https://expo.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
-[![SQLite](https://img.shields.io/badge/Database-SQLite%20(Local)-003B57.svg)](https://docs.expo.dev/versions/latest/sdk/sqlite/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<div align="center">
 
-A clean, modern, and **100% offline-first** personal expense tracker mobile application built with **React Native**, **Expo**, **TypeScript**, and **local SQLite**.
+[![React Native](https://img.shields.io/badge/React%20Native-0.76+-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
+[![Expo](https://img.shields.io/badge/Expo-SDK%2052-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-Local%20DB-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://docs.expo.dev/versions/latest/sdk/sqlite/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-Designed with a sleek midnight dark aesthetic, fluid gesture interactions, dynamic charts, and zero external tracking or cloud servers — your financial data never leaves your device.
+### Fast, elegant, and 100% offline personal finance tracking for Android and iOS.
 
----
+[✨ Features](#-features) • [🚀 Quick Start](#-quick-start) • [🛠️ Tech Stack](#-tech-stack) • [📦 Build APK](#-building-the-apk) • [🔒 Privacy](#-offline-guarantee--privacy)
 
-## Table of Contents
-
-- [Key Highlights](#key-highlights)
-- [Detailed Features](#detailed-features)
-  - [1. Dashboard & Net Balance](#1-dashboard--net-balance)
-  - [2. Fast Transaction Logging](#2-fast-transaction-logging)
-  - [3. Category-Wise Monthly Budgets](#3-category-wise-monthly-budgets)
-  - [4. Analytics & Visual Breakdown](#4-analytics--visual-breakdown)
-  - [5. Profile & Multi-Currency Settings](#5-profile--multi-currency-settings)
-- [Architecture & Data Storage](#architecture--data-storage)
-  - [Database Schema](#database-schema)
-  - [Offline-First Reliability](#offline-first-reliability)
-  - [Keyboard-Aware UI](#keyboard-aware-ui)
-- [Tech Stack](#tech-stack)
-- [Project Directory Structure](#project-directory-structure)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Running the App](#running-the-app)
-- [Building the APK](#building-the-apk)
-  - [Local Gradle Build](#local-gradle-build)
-  - [EAS Cloud Build](#eas-cloud-build)
-- [Privacy & Security](#privacy--security)
-- [Contributing](#contributing)
-- [License](#license)
+</div>
 
 ---
 
-## Key Highlights
-
-- **100% Offline-First**: Stored locally on-device in SQLite (`expo-sqlite`) with WAL (Write-Ahead Logging) mode enabled.
-- **Zero Data Collection**: No remote servers, no analytics beacons, no tracking, and no internet connection required.
-- **Responsive Midnight Design**: Dark palette crafted with high-contrast text, glowing accent states, and light theme option.
-- **Native Android & iOS Performance**: Fluid 60fps animations powered by React Native Reanimated and hardware acceleration.
-- **Keyboard-Adaptive Inputs**: Bottom sheet modals and text fields dynamically avoid soft keyboards, keeping active inputs clearly visible while typing.
+> 🔒 **Offline Guarantee**: Your financial data never leaves your device. No cloud sync, no tracking, no account required. Everything is stored locally on a lightning-fast SQLite engine with WAL mode.
 
 ---
 
-## Detailed Features
+## 🌟 At a Glance
 
-### 1. Dashboard & Net Balance
-- Real-time calculation of **Total Balance**, **Monthly Income**, and **Monthly Expenses**.
-- Clean financial summary card with cash flow indicators.
-- Quick navigation to add income or expense transactions with one tap.
-- Recent transactions feed with category badges, amounts, and dates.
-
-### 2. Fast Transaction Logging
-- Distinguish between **Expenses** and **Income** with an instant toggle.
-- Pre-configured categories (Food & Dining, Shopping, Transport, Entertainment, Bills & Utilities, Healthcare, Salary, Investments, etc.) with custom color coding and vector icons.
-- Add optional personal notes and custom transaction dates via an integrated calendar date picker.
-- Add custom category names on the fly.
-- Edit or delete transactions with instant balance recalculation.
-
-### 3. Category-Wise Monthly Budgets
-- Set monthly budget limits per category (e.g., Food, Groceries, Fuel).
-- Visual progress bars showing percentage utilized and remaining allowance.
-- Intelligent color-coded warning system:
-  - **Green**: Healthy budget usage (< 75%).
-  - **Yellow / Orange**: Approaching limit (75% - 99%).
-  - **Red**: Budget exceeded with overdue deficit indicators.
-
-### 4. Analytics & Visual Breakdown
-- Interactive category expense distribution donut/pie chart.
-- Day-by-day weekly spending bar charts to spot peak expenditure days.
-- Month-over-month trend analysis to monitor savings and expense habits over time.
-- Filter transactions by category, type, and custom date intervals.
-
-### 5. Profile & Multi-Currency Settings
-- **Custom Profile**: Update display name and username handle; pick a profile avatar photo directly from device gallery.
-- **Multi-Currency Engine**: Default currency set to Indian Rupee (`₹` INR) with instant switching to USD (`$`), EUR (`€`), GBP (`£`), JPY (`¥`), CAD (`$`), AUD (`$`), and more.
-- **Data Management Utilities**:
-  - Clear historical months' data while retaining current month.
-  - One-tap full factory reset for complete database wipe.
+- [x] **100% Offline & Private** — Zero external API calls or data harvesting.
+- [x] **Interactive Dashboard** — Dynamic balance, income, expense calculation and cash flow cards.
+- [x] **Category Budgets** — Visual spending caps with green / amber / red alerts.
+- [x] **Analytics & Charts** — Donut breakdowns and weekly spending distribution bars.
+- [x] **Multi-Currency** — Indian Rupee (`₹` INR by default), USD (`$`), EUR (`€`), GBP (`£`), and more.
+- [x] **Keyboard-Aware UI** — Modal cards dynamically glide above the keyboard for effortless typing.
 
 ---
 
-## Architecture & Data Storage
+## ✨ Features
 
-### Database Schema
+<details open>
+<summary><b>📊 1. Financial Dashboard & Real-Time Balance</b></summary>
+<br>
 
-All data is managed locally through `expo-sqlite` using parameterized SQL queries to prevent injection and corruption:
+- **Real-Time Summary**: Instant overview of your total balance, monthly income, and monthly expenses.
+- **Cash Flow Overview**: Color-coded incoming vs. outgoing comparisons.
+- **Recent Transactions Feed**: High-priority view of latest transactions with category icons and timestamps.
+- **Quick Actions**: Instant access to log income or expense in one tap.
+
+</details>
+
+<details>
+<summary><b>💳 2. Transaction Logging & Management</b></summary>
+<br>
+
+- **Expense vs. Income**: One-tap toggle between expense deductions and income credits.
+- **Rich Categories**: Pre-loaded with essential categories (Food, Shopping, Transport, Utilities, Entertainment, Healthcare, Salary, Investments).
+- **Custom Categories**: Add custom categories on the fly with distinct branding.
+- **Integrated Calendar Picker**: Select any past or future transaction date.
+- **Notes & Annotations**: Attach personal notes to keep full context of your spending.
+- **Edit & Delete**: Full CRUD support with instant reactive recalculation of balances.
+
+</details>
+
+<details>
+<summary><b>🎯 3. Smart Monthly Budgets</b></summary>
+<br>
+
+- **Category-Specific Caps**: Allocate individual monthly spending limits for each category.
+- **Visual Progress Bars**: Animated indicators display remaining allowance and percentage spent.
+- **Threshold Alerts**:
+  - 🟢 **Safe**: < 75% budget spent.
+  - 🟡 **Warning**: 75% - 99% budget utilized.
+  - 🔴 **Over Budget**: 100%+ limit exceeded with deficit callouts.
+
+</details>
+
+<details>
+<summary><b>📈 4. Visual Analytics & Charts</b></summary>
+<br>
+
+- **Category Distribution**: Interactive donut charts highlighting where most money goes.
+- **Weekly Spend Trends**: Bar graph highlighting peak expenditure days throughout the week.
+- **Month-Over-Month Comparison**: Track your savings rate and spending habits over time.
+- **Search & Filters**: Filter records by date ranges, category, or transaction type.
+
+</details>
+
+<details>
+<summary><b>⚙️ 5. Personalization & Data Controls</b></summary>
+<br>
+
+- **Profile Customization**: Choose your display name, username handle, and avatar photo from gallery.
+- **Multi-Currency Switcher**: Toggle effortlessly between INR (`₹`), USD (`$`), EUR (`€`), GBP (`£`), JPY (`¥`), and CAD (`$`).
+- **Theme Engine**: Midnight dark aesthetic with glassmorphic cards and light mode toggle.
+- **Data Maintenance**:
+  - *Clear Previous Months*: Clean historical records while keeping current month intact.
+  - *Full Factory Reset*: Clean slate wipe in a single tap.
+
+</details>
+
+---
+
+## 🛠️ Tech Stack
+
+<div align="center">
+
+| Component | Technology | Description |
+|:---|:---|:---|
+| **Core Framework** | React Native 0.76+ / Expo SDK 52 | High performance cross-platform runtime |
+| **Routing** | Expo Router | Native file-based navigation |
+| **Language** | TypeScript 5.3+ | Strict static typing and code reliability |
+| **Storage Engine** | Expo SQLite (`expo-sqlite`) | Local relational SQLite database with WAL mode |
+| **Vector Graphics** | `react-native-svg` | Smooth resolution-independent charts |
+| **Icons** | `@expo/vector-icons` | Ionicons vector icon set |
+| **Media** | `expo-image-picker` | Native gallery image selection |
+
+</div>
+
+---
+
+## 🗄️ Architecture & Database
+
+<details>
+<summary><b>Click to expand SQLite Schema & Query Design</b></summary>
+<br>
+
+All data is structured across three local tables with composite indexes for sub-millisecond lookups:
 
 ```sql
 -- Transactions Table
-CREATE TABLE transactions (
+CREATE TABLE IF NOT EXISTS transactions (
   id TEXT PRIMARY KEY NOT NULL,
   amount REAL NOT NULL,
   type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
@@ -106,8 +134,13 @@ CREATE TABLE transactions (
   created_at INTEGER NOT NULL
 );
 
+-- Composite Indexes for rapid filtering
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category);
+
 -- Budgets Table
-CREATE TABLE budgets (
+CREATE TABLE IF NOT EXISTS budgets (
   id TEXT PRIMARY KEY NOT NULL,
   category TEXT NOT NULL,
   amount REAL NOT NULL,
@@ -116,133 +149,80 @@ CREATE TABLE budgets (
   UNIQUE(category, month, year)
 );
 
--- App Settings Table
-CREATE TABLE settings (
+-- App Settings & Preferences
+CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY NOT NULL,
   value TEXT NOT NULL
 );
 ```
 
-### Offline-First Reliability
-- **WAL Mode (`PRAGMA journal_mode = WAL;`)**: Ensures fast concurrent reads and writes without database locking.
-- **Indexed Queries**: Composite indexes on `date`, `type`, `category`, and `month_year` ensure fast load times even with thousands of transactions.
-- **Fresh Install Experience**: Starts with clean zero-balance state (no mock seed data) ready for immediate personal use.
-
-### Keyboard-Aware UI
-- All input cards and modals utilize `KeyboardAvoidingView` combined with scrollable containers and Android `statusBarTranslucent` dialog handling.
-- Input fields automatically shift into the visible viewport above the keyboard when focused.
+</details>
 
 ---
 
-## Tech Stack
+## 🚀 Quick Start
 
-| Layer | Technology |
-| :--- | :--- |
-| **Framework** | [React Native 0.76+](https://reactnative.dev/) / [Expo SDK 52](https://expo.dev/) |
-| **Navigation** | [Expo Router](https://docs.expo.dev/router/introduction/) (File-based routing) |
-| **Language** | [TypeScript 5.3+](https://www.typescriptlang.org/) |
-| **Local Storage** | [expo-sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/) (SQLite Engine) |
-| **UI & Icons** | [react-native-safe-area-context](https://github.com/th3rdwave/react-native-safe-area-context), [@expo/vector-icons](https://icons.expo.fyi/) |
-| **Graphics** | [react-native-svg](https://github.com/software-mansion/react-native-svg) |
-| **Media** | [expo-image-picker](https://docs.expo.dev/versions/latest/sdk/image-picker/) |
-
----
-
-## Project Directory Structure
-
-```text
-├── app/                          # Expo Router navigation and screens
-│   ├── (tabs)/                   # Bottom tab navigator
-│   │   ├── index.tsx             # Dashboard & financial summary
-│   │   ├── stats.tsx             # Analytics, charts, and distribution
-│   │   ├── budget.tsx            # Monthly budget planner & limits
-│   │   └── settings.tsx          # Profile, theme, currency, data tools
-│   ├── add-transaction.tsx       # Expense & income entry modal
-│   ├── transactions-list.tsx     # Full transaction history & search
-│   ├── onboarding.tsx            # First-time launch welcome screen
-│   └── _layout.tsx               # Root layout & providers
-├── assets/                       # Adaptive app icons & splash screens
-│   ├── icon.png                  # Master 1024x1024 app icon
-│   ├── android-icon-foreground.png # Android adaptive icon foreground
-│   ├── android-icon-background.png # Android adaptive icon background
-│   └── splash-icon.png           # Splash screen branding
-├── src/
-│   ├── components/               # Custom UI components, charts & cards
-│   ├── constants/                # Categories, theme palettes, icons
-│   ├── context/                  # Global reactive state (ExpenseContext)
-│   ├── db/                       # SQLite schema, queries, and repositories
-│   ├── theme/                    # Light & dark theme palettes
-│   └── utils/                    # Currency formatters & date helpers
-├── app.json                      # Expo application configuration
-├── package.json                  # Dependencies and build scripts
-└── tsconfig.json                 # TypeScript compiler configuration
-```
-
----
-
-## Getting Started
+<details open>
+<summary><b>Installation & Running Locally</b></summary>
+<br>
 
 ### Prerequisites
+- [Node.js](https://nodejs.org/) (version 18 or 20 LTS)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- [Expo Go](https://expo.dev/client) app installed on your smartphone (or an Android/iOS emulator)
 
-Make sure your development machine has:
-- **Node.js** (v18 or v20 LTS recommended)
-- **npm** or **yarn**
-- **Expo Go** installed on your Android/iOS physical device, or an Android Studio / iOS simulator
+### 1. Clone & Install
+```bash
+git clone https://github.com/THE-NIKHIL07/Expense-tracker.git
+cd Expense-tracker
+npm install
+```
 
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/THE-NIKHIL07/Expense-tracker.git
-   cd Expense-tracker
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running the App
-
-Start the Expo local development server:
-
+### 2. Start Development Server
 ```bash
 npx expo start
 ```
 
-- Press `a` in the terminal to open on a connected Android device / emulator.
-- Press `i` to open on an iOS simulator.
-- Scan the printed QR code with the **Expo Go** mobile app to run directly on your physical smartphone.
+### 3. Launch on Device
+- Scan the printed QR code using the **Expo Go** app on Android or the Camera app on iOS.
+- Press <kbd>a</kbd> in your terminal to launch directly on a connected Android device or emulator.
+- Press <kbd>i</kbd> to launch on an iOS simulator.
+
+</details>
 
 ---
 
-## Building the APK
+## 📦 Building the APK
 
-### Local Gradle Build
+<details>
+<summary><b>Option A: Local Android Gradle Build</b></summary>
+<br>
 
-If you have Android SDK and JDK configured locally:
+Requires Android Studio & SDK installed on your machine:
 
-1. Generate the native Android folder:
-   ```bash
-   npx expo prebuild --platform android
-   ```
+```bash
+# 1. Prebuild native android project
+npx expo prebuild --platform android
 
-2. Build the release APK:
-   ```bash
-   cd android
-   ./gradlew assembleRelease
-   ```
+# 2. Compile standalone release APK
+cd android
+./gradlew assembleRelease
+```
 
-The standalone release APK will be located at:
+Your compiled standalone `.apk` will be output to:
 ```text
 android/app/build/outputs/apk/release/app-release.apk
 ```
 
-> **Note for Windows builds**: If you encounter Windows MAX_PATH limitations during C++ Ninja compilation, create a junction (e.g. `mklink /J C:\et <project_path>`) and run Gradle from the shortened directory path.
+> **Windows Tip**: If you encounter Windows MAX_PATH (260 character) limits during C++ Ninja compilation, create a junction (e.g., `mklink /J C:\et <project_path>`) and run Gradle from `C:\et\android`.
 
-### EAS Cloud Build
+</details>
 
-You can also build the APK in the cloud using Expo Application Services:
+<details>
+<summary><b>Option B: Cloud Build via EAS</b></summary>
+<br>
+
+Build directly in the cloud without needing Android Studio or Java SDK locally:
 
 ```bash
 npm install -g eas-cli
@@ -250,28 +230,45 @@ eas login
 eas build --platform android --profile preview
 ```
 
----
-
-## Privacy & Security
-
-- **No Remote Network Requests**: The app operates entirely locally. No telemetry, third-party analytics, or background tracking services are included.
-- **Local Storage Only**: Database entries remain strictly in your device's application sandbox storage.
-- **Offline Reliability**: Works seamlessly in airplane mode or areas without cellular coverage.
+</details>
 
 ---
 
-## Contributing
+## 🔒 Offline Guarantee & Privacy
 
-Contributions, issues, and feature suggestions are welcome!
+```
+┌──────────────────────────────────────────────────────────┐
+│                   YOUR MOBILE DEVICE                     │
+│                                                          │
+│   ┌──────────────────┐          ┌────────────────────┐   │
+│   │   React Native   │ ◄──────► │    Local SQLite    │   │
+│   │     Expo App     │          │    Database file   │   │
+│   └──────────────────┘          └────────────────────┘   │
+└──────────────────────────────────────────────────────────┘
+                             X
+                     No Remote Server
+                     No Cloud Backup
+                     No Tracking / Telemetry
+```
 
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/NewFeature`).
-3. Commit your changes (`git commit -m "add new feature"`).
-4. Push to the branch (`git push origin feature/NewFeature`).
-5. Open a Pull Request.
+- **Zero Cloud Leakage**: No network calls, analytics trackers, or user profiling.
+- **Sandboxed Security**: Data resides strictly within your device's isolated application storage.
+- **Airplane-Mode Ready**: Fully functional offline anytime, anywhere.
 
 ---
 
-## License
+## 🤝 Contributing
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+Contributions and ideas are always welcome!
+
+1. Fork this repository.
+2. Create a feature branch: `git checkout -b feature/awesome-feature`
+3. Commit your updates: `git commit -m "add awesome feature"`
+4. Push to branch: `git push origin feature/awesome-feature`
+5. Submit a Pull Request.
+
+---
+
+## 📄 License
+
+This project is open-source software licensed under the [MIT License](LICENSE).
