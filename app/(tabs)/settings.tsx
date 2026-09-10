@@ -10,6 +10,8 @@ import {
   Image,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -272,58 +274,74 @@ export default function ProfileScreen() {
         visible={editProfileModal}
         transparent
         animationType="slide"
+        statusBarTranslucent
         onRequestClose={() => setEditProfileModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior="padding"
+          style={styles.modalOverlay}
+          keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setEditProfileModal(false)}
+          />
           <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Profile</Text>
-              <TouchableOpacity onPress={() => setEditProfileModal(false)}>
-                <Ionicons name="close" size={22} color={colors.textMuted} />
+            <ScrollView
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Profile</Text>
+                <TouchableOpacity onPress={() => setEditProfileModal(false)}>
+                  <Ionicons name="close" size={22} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handlePickImage}
+                style={[styles.modalPhotoBtn, { backgroundColor: colors.primaryGlow }]}
+              >
+                <Ionicons name="image-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                <Text style={[styles.modalPhotoText, { color: colors.primary }]}>Choose Photo from Gallery</Text>
               </TouchableOpacity>
-            </View>
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handlePickImage}
-              style={[styles.modalPhotoBtn, { backgroundColor: colors.primaryGlow }]}
-            >
-              <Ionicons name="image-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
-              <Text style={[styles.modalPhotoText, { color: colors.primary }]}>Choose Photo from Gallery</Text>
-            </TouchableOpacity>
+              <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Name</Text>
+              <View style={[styles.inputBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.modalInput, { color: colors.text }]}
+                  value={nameInput}
+                  onChangeText={setNameInput}
+                  placeholder="Full Name"
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
 
-            <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Name</Text>
-            <View style={[styles.inputBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.modalInput, { color: colors.text }]}
-                value={nameInput}
-                onChangeText={setNameInput}
-                placeholder="Full Name"
-                placeholderTextColor={colors.textMuted}
-              />
-            </View>
+              <Text style={[styles.inputLabel, { color: colors.textMuted, marginTop: 14 }]}>Handle</Text>
+              <View style={[styles.inputBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                <TextInput
+                  style={[styles.modalInput, { color: colors.text }]}
+                  value={handleInput}
+                  onChangeText={setHandleInput}
+                  placeholder="username"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="none"
+                />
+              </View>
 
-            <Text style={[styles.inputLabel, { color: colors.textMuted, marginTop: 14 }]}>Handle</Text>
-            <View style={[styles.inputBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-              <TextInput
-                style={[styles.modalInput, { color: colors.text }]}
-                value={handleInput}
-                onChangeText={setHandleInput}
-                placeholder="username"
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="none"
-              />
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleSaveProfile}
-              style={styles.saveBtn}
-            >
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleSaveProfile}
+                style={styles.saveBtn}
+              >
+                <Text style={styles.saveBtnText}>Save</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal

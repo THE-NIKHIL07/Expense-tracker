@@ -56,8 +56,8 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
 
-  const [userName, setUserName] = useState<string>('Jake Wilson');
-  const [userHandle, setUserHandle] = useState<string>('jake_wilson');
+  const [userName, setUserName] = useState<string>('User');
+  const [userHandle, setUserHandle] = useState<string>('user');
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -88,8 +88,8 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       getDatabase();
 
-      const savedName = SettingsRepository.getSetting('user_name', 'Jake Wilson');
-      const savedHandle = SettingsRepository.getSetting('user_handle', 'jake_wilson');
+      const savedName = SettingsRepository.getSetting('user_name', 'User');
+      const savedHandle = SettingsRepository.getSetting('user_handle', 'user');
       const savedPhoto = SettingsRepository.getSetting('user_photo', '');
       setUserName(savedName);
       setUserHandle(savedHandle);

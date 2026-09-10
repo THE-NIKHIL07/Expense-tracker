@@ -8,6 +8,8 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -213,64 +215,80 @@ export default function BudgetScreen() {
         visible={modalVisible}
         transparent
         animationType="slide"
+        statusBarTranslucent
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior="padding"
+          style={styles.modalOverlay}
+          keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          />
           <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Set Category Budget</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Ionicons name="close" size={22} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Select Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryPicker}>
-              {EXPENSE_CATEGORIES.map((c) => {
-                const isSelected = selectedCat.toLowerCase() === c.name.toLowerCase();
-                return (
-                  <TouchableOpacity
-                    key={c.id}
-                    onPress={() => setSelectedCat(c.name)}
-                    style={[
-                      styles.pickerChip,
-                      { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
-                      isSelected && styles.pickerChipActive,
-                    ]}
-                  >
-                    <Text style={[styles.pickerChipText, { color: colors.textSecondary }, isSelected && { color: '#FFFFFF' }]}>
-                      {c.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <Text style={[styles.modalLabel, { color: colors.textMuted, marginTop: 18 }]}>
-              Monthly Limit ({currency.symbol})
-            </Text>
-            <View style={[styles.modalInputBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-              <Text style={styles.currencyPrefix}>{currency.symbol}</Text>
-              <TextInput
-                style={[styles.modalInput, { color: colors.text }]}
-                placeholder="e.g. 5000"
-                placeholderTextColor={colors.textMuted}
-                value={budgetAmountStr}
-                onChangeText={setBudgetAmountStr}
-                keyboardType="numeric"
-                autoFocus
-              />
-            </View>
-
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleSaveBudget}
-              style={styles.modalSaveBtn}
+            <ScrollView
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.modalSaveText}>Save Budget</Text>
-            </TouchableOpacity>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Set Category Budget</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <Ionicons name="close" size={22} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Select Category</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryPicker}>
+                {EXPENSE_CATEGORIES.map((c) => {
+                  const isSelected = selectedCat.toLowerCase() === c.name.toLowerCase();
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      onPress={() => setSelectedCat(c.name)}
+                      style={[
+                        styles.pickerChip,
+                        { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
+                        isSelected && styles.pickerChipActive,
+                      ]}
+                    >
+                      <Text style={[styles.pickerChipText, { color: colors.textSecondary }, isSelected && { color: '#FFFFFF' }]}>
+                        {c.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              <Text style={[styles.modalLabel, { color: colors.textMuted, marginTop: 18 }]}>
+                Monthly Limit ({currency.symbol})
+              </Text>
+              <View style={[styles.modalInputBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                <Text style={styles.currencyPrefix}>{currency.symbol}</Text>
+                <TextInput
+                  style={[styles.modalInput, { color: colors.text }]}
+                  placeholder="e.g. 5000"
+                  placeholderTextColor={colors.textMuted}
+                  value={budgetAmountStr}
+                  onChangeText={setBudgetAmountStr}
+                  keyboardType="numeric"
+                  autoFocus
+                />
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleSaveBudget}
+                style={styles.modalSaveBtn}
+              >
+                <Text style={styles.modalSaveText}>Save Budget</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
