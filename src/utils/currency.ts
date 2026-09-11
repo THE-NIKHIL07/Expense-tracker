@@ -1,16 +1,18 @@
-
 export function formatCurrency(
   amount: number,
   symbol: string = '₹',
-  includeDecimals: boolean = false
+  includeDecimals?: boolean
 ): string {
   const isNegative = amount < 0;
   const absAmount = Math.abs(amount);
 
+  const shouldIncludeDecimals =
+    includeDecimals !== undefined ? includeDecimals : absAmount % 1 !== 0;
+
   let formattedNumber = '';
 
   if (symbol === '₹') {
-    const parts = absAmount.toFixed(includeDecimals ? 2 : 0).split('.');
+    const parts = absAmount.toFixed(shouldIncludeDecimals ? 2 : 0).split('.');
     let intPart = parts[0];
     const decPart = parts[1];
 
@@ -24,14 +26,13 @@ export function formatCurrency(
     formattedNumber = decPart !== undefined ? `${intPart}.${decPart}` : intPart;
   } else {
     formattedNumber = absAmount.toLocaleString('en-US', {
-      minimumFractionDigits: includeDecimals ? 2 : 0,
-      maximumFractionDigits: includeDecimals ? 2 : 0,
+      minimumFractionDigits: shouldIncludeDecimals ? 2 : 0,
+      maximumFractionDigits: shouldIncludeDecimals ? 2 : 0,
     });
   }
 
   return `${isNegative ? '-' : ''}${symbol}${formattedNumber}`;
 }
-
 
 export function formatCompactCurrency(amount: number, symbol: string = '₹'): string {
   const abs = Math.abs(amount);
