@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,19 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
-import { useTheme, CURRENCIES } from '../../src/theme/ThemeContext';
+import * as SecureStore from 'expo-secure-store';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { useTheme } from '../../src/theme/ThemeContext';
 import { useExpenses } from '../../src/context/ExpenseContext';
 import { SettingsRepository } from '../../src/db/repository';
+import { CurrencyPickerModal } from '../../src/components/settings/CurrencyPickerModal';
+import { AiPreferencesModal } from '../../src/components/settings/AiPreferencesModal';
 
 export default function ProfileScreen() {
   const { isDark, setThemeMode, currency, setCurrency, colors } = useTheme();
@@ -29,12 +35,38 @@ export default function ProfileScreen() {
     updateUserProfile,
     clearPreviousMonthsData,
     resetAllData,
+    vacuumDatabase,
+    isBiometricEnabled,
+    setBiometricEnabled,
+    isAiEnabled,
+    setAiEnabled,
   } = useExpenses();
 
   const [editProfileModal, setEditProfileModal] = useState(false);
   const [currencyModal, setCurrencyModal] = useState(false);
+  const [aiModal, setAiModal] = useState(false);
   const [nameInput, setNameInput] = useState(userName);
   const [handleInput, setHandleInput] = useState(userHandle);
+
+  const handleSaveAiSettings = async (keyToSave: string) => {
+    try {
+      const clean = keyToSave.trim();
+      if (clean) {
+        try {
+          await SecureStore.setItemAsync('grok_api_key', clean);
+        } catch {}
+        SettingsRepository.setSetting('ai_api_key_backup', clean);
+      } else {
+        try {
+          await SecureStore.deleteItemAsync('grok_api_key');
+        } catch {}
+        SettingsRepository.setSetting('ai_api_key_backup', '');
+      }
+      Alert.alert('Saved', 'FinBot preferences updated.');
+    } catch {
+      Alert.alert('Error', 'Failed to save API key securely.');
+    }
+  };
 
   const handlePickImage = async () => {
     try {
@@ -72,10 +104,88 @@ export default function ProfileScreen() {
     setEditProfileModal(false);
   };
 
+
+
+  const handleToggleBiometric = async (value: boolean) => {
+    if (!value) {
+      try {
+        const result = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Authenticate to Disable Lock',
+          fallbackLabel: 'Use Device Pattern / PIN',
+          cancelLabel: 'Cancel',
+          disableDeviceFallback: false,
+        });
+        if (result.success) {
+          setBiometricEnabled(false);
+          Alert.alert('Disabled', 'App lock disabled.');
+        } else {
+          Alert.alert('Verification Failed', 'Could not verify identity. Lock remains active.');
+        }
+      } catch {
+        setBiometricEnabled(false);
+      }
+      return;
+    }
+
+    try {
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (!isEnrolled) {
+        Alert.alert(
+          'No Screen Lock Found',
+          'Your smartphone does not have any lock enabled (no fingerprint, pattern, design lock, or PIN). Please set up a fingerprint or pattern lock in your phone settings first.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Phone Settings',
+              onPress: () => {
+                Linking.openSettings();
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to Enable Lock',
+        fallbackLabel: 'Use Device Pattern / PIN',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      if (result.success) {
+        setBiometricEnabled(true);
+        Alert.alert('Lock Enabled', 'App is now secured with your device lock.');
+      } else {
+        Alert.alert('Verification Failed', 'Could not verify identity. Lock was not enabled.');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to authenticate device lock.');
+    }
+  };
+
+  const handleVacuumDatabase = () => {
+    Alert.alert(
+      'Optimize Database',
+      'This executes SQLite WAL truncation and VACUUM to reclaim disk space on your phone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Optimize Now',
+          onPress: () => {
+            vacuumDatabase();
+            Alert.alert('Optimization Complete', 'Database defragmented and free storage reclaimed.');
+          },
+        },
+      ]
+    );
+  };
+
   const handleClearPrevious = () => {
     Alert.alert(
       'Clear Previous Months',
-      'This will permanently delete all transactions before the current month. Transactions for this month will be kept.',
+      'This will permanently delete all transactions before the current month and clean old notifications to reclaim storage space.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -83,7 +193,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: () => {
             const count = clearPreviousMonthsData();
-            Alert.alert('Success', `Removed ${count} transaction(s) from previous months.`);
+            Alert.alert('Success', `Cleaned ${count} transaction(s) and reclaimed storage space.`);
           },
         },
       ]
@@ -93,7 +203,7 @@ export default function ProfileScreen() {
   const handleResetData = () => {
     Alert.alert(
       'Reset All Data',
-      'This will delete all transactions and budgets. This action cannot be undone.',
+      'This will permanently delete EVERYTHING: all transactions, budgets, goals, payment dues, and notifications. Database storage will be completely cleaned and reset.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -101,7 +211,7 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: () => {
             resetAllData();
-            Alert.alert('Reset Complete', 'All transactions and budgets have been cleared.');
+            Alert.alert('Reset Complete', 'All data has been wiped and storage cleaned.');
           },
         },
       ]
@@ -111,7 +221,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Settings & Profile</Text>
       </View>
 
       <ScrollView
@@ -148,7 +258,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>SETTINGS</Text>
+        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>PREFERENCES</Text>
 
         <View
           style={[
@@ -216,12 +326,93 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>DATA MANAGEMENT</Text>
+        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>SECURITY & INTELLIGENCE</Text>
 
         <View
           style={[
             styles.menuCard,
             { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIconBox, { backgroundColor: isBiometricEnabled ? 'rgba(16, 185, 129, 0.15)' : 'rgba(100, 116, 139, 0.15)' }]}>
+                <Ionicons
+                  name="finger-print"
+                  size={20}
+                  color={isBiometricEnabled ? '#10B981' : colors.textMuted}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuTitle, { color: colors.text }]}>Biometric</Text>
+                <Text style={[styles.menuSub, { color: colors.textSecondary }]}>
+                  {isBiometricEnabled ? 'Enabled' : 'Require biometric to open app'}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={isBiometricEnabled}
+              onValueChange={handleToggleBiometric}
+              trackColor={{ false: colors.border, true: '#10B981' }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => setAiModal(true)}
+            style={styles.menuItem}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
+                <Ionicons name="sparkles" size={20} color="#A855F7" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.menuTitle, { color: colors.text }]}>FinBot</Text>
+                <Text style={[styles.menuSub, { color: colors.textSecondary }]}>
+                  {isAiEnabled ? 'Enabled' : 'Disabled (Requires API Key)'}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionHeader, { color: colors.textMuted }]}>STORAGE & DATA MANAGEMENT</Text>
+
+        <View
+          style={[
+            styles.storageCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.storageCardHeader}>
+            <View style={[styles.storageIconBox, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
+              <Ionicons name="server-outline" size={24} color="#38BDF8" />
+            </View>
+            <View style={styles.storageInfoCol}>
+              <Text style={[styles.storageTitle, { color: colors.text }]}>Database Optimization</Text>
+              <Text style={[styles.storageHint, { color: colors.textSecondary }]}>
+                Stored locally on your device. Never synced to cloud.
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleVacuumDatabase}
+              style={[styles.optimizeBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
+            >
+              <Ionicons name="sparkles" size={13} color="#38BDF8" style={{ marginRight: 5 }} />
+              <Text style={[styles.optimizeBtnText, { color: '#38BDF8' }]}>Optimize</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.menuCard,
+            { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 12 },
           ]}
         >
           <TouchableOpacity
@@ -238,7 +429,7 @@ export default function ProfileScreen() {
                   Clear Previous Months
                 </Text>
                 <Text style={[styles.menuSub, { color: colors.textSecondary }]}>
-                  Keep only this month's data
+                  Keep only current month's data
                 </Text>
               </View>
             </View>
@@ -259,7 +450,7 @@ export default function ProfileScreen() {
               <View>
                 <Text style={[styles.menuTitle, { color: '#EF4444' }]}>Reset All Data</Text>
                 <Text style={[styles.menuSub, { color: colors.textSecondary }]}>
-                  Clear all transactions &amp; budgets
+                  Clear all transactions, budgets, goals & dues
                 </Text>
               </View>
             </View>
@@ -344,52 +535,18 @@ export default function ProfileScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal
+      <CurrencyPickerModal
         visible={currencyModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setCurrencyModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Currency</Text>
-              <TouchableOpacity onPress={() => setCurrencyModal(false)}>
-                <Ionicons name="close" size={22} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
+        onClose={() => setCurrencyModal(false)}
+      />
 
-            <ScrollView style={{ maxHeight: 350 }}>
-              {CURRENCIES.map((c) => {
-                const isSelected = currency.code === c.code;
-                return (
-                  <TouchableOpacity
-                    key={c.code}
-                    onPress={() => {
-                      setCurrency(c);
-                      SettingsRepository.setSetting('currency', c.code);
-                      SettingsRepository.setSetting('currency_symbol', c.symbol);
-                      setCurrencyModal(false);
-                    }}
-                    style={[
-                      styles.currencyItem,
-                      {
-                        borderColor: isSelected ? colors.primary : colors.border,
-                        backgroundColor: isSelected ? colors.surfaceElevated : colors.surface,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.currencyName, { color: isSelected ? colors.primary : colors.text }]}>
-                      {c.name}
-                    </Text>
-                    <Text style={[styles.currencySymbol, { color: colors.primary }]}>{c.symbol}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <AiPreferencesModal
+        visible={aiModal}
+        onClose={() => setAiModal(false)}
+        isAiEnabled={isAiEnabled}
+        setAiEnabled={setAiEnabled}
+        onSave={handleSaveAiSettings}
+      />
     </SafeAreaView>
   );
 }
@@ -521,6 +678,82 @@ const styles = StyleSheet.create({
     backgroundColor: '#161C2A',
     marginLeft: 70,
   },
+  storageCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 18,
+  },
+  storageCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  storageIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storageInfoCol: {
+    flex: 1,
+  },
+  storageTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  storageSizeText: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  offlineChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  greenDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+    marginRight: 5,
+  },
+  offlineChipText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  storageDivider: {
+    height: 1,
+    marginVertical: 14,
+  },
+  storageActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  storageHint: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 15,
+  },
+  optimizeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  optimizeBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -593,30 +826,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
-  },
-  currencyItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    marginVertical: 4,
-    borderWidth: 1,
-    borderColor: '#192030',
-  },
-  currencyItemActive: {
-    backgroundColor: '#121622',
-    borderColor: '#0066FF',
-  },
-  currencyName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  currencySymbol: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#388BFF',
   },
 });
