@@ -24,6 +24,9 @@
 
 - [x] **100% Offline & Private** — Zero external API calls or data harvesting.
 - [x] **Interactive Dashboard** — Dynamic balance, income, expense calculation and cash flow cards.
+- [x] **Savings Goals & Payment Dues** — Track target milestones, partial deposits, and recurring upcoming dues with date validation.
+- [x] **AI Expense Assistant** — On-device smart financial chatbot with recent contextual memory (10 message history).
+- [x] **Biometric Security** — Secure fingerprint and Face ID app protection backed by Expo SecureStore.
 - [x] **Category Budgets** — Visual spending caps with green / amber / red alerts.
 - [x] **Analytics & Charts** — Donut breakdowns and weekly spending distribution bars.
 - [x] **Multi-Currency** — Indian Rupee (`₹` INR by default), USD (`$`), EUR (`€`), GBP (`£`), and more.
@@ -91,6 +94,27 @@
 - **Data Maintenance**:
   - *Clear Previous Months*: Clean historical records while keeping current month intact.
   - *Full Factory Reset*: Clean slate wipe in a single tap.
+
+</details>
+
+<details>
+<summary><b>🎯 6. Savings Goals & Payment Dues</b></summary>
+<br>
+
+- **Target Milestones**: Create financial goals with target amounts, due dates, and custom categories.
+- **Deposit Tracking**: Add contributions directly toward individual goals with instant visual progress bars.
+- **Payment Dues**: Track upcoming bills and dues with strict past-date prevention safeguards.
+- **In-App Reminder Center**: Direct notifications for approaching deadlines and dues.
+
+</details>
+
+<details>
+<summary><b>🤖 7. On-Device AI Financial Assistant & Security</b></summary>
+<br>
+
+- **Smart Offline Assistant**: Ask questions about your spending patterns, highest expense categories, and budget health.
+- **Contextual Memory**: Remembers your recent 10 messages stored locally in SQLite with zero cloud transmission.
+- **Biometric App Lock**: Protect sensitive spending records using fingerprint or Face ID authentication with secure fallback.
 
 </details>
 
