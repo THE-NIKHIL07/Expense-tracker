@@ -21,11 +21,16 @@ import { formatCurrency } from '../../src/utils/currency';
 
 export default function BudgetScreen() {
   const { currency, colors } = useTheme();
-  const { budgets, setBudget } = useExpenses();
+  const { budgets, setBudget, deleteBudget } = useExpenses();
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
   const [selectedCat, setSelectedCat] = useState(EXPENSE_CATEGORIES[0].name);
   const [budgetAmountStr, setBudgetAmountStr] = useState('');
+
+  const existingBudget = budgets.find(
+    (b) => b.category.toLowerCase() === selectedCat.toLowerCase()
+  );
 
   const totalBudget = budgets.reduce((sum, b) => sum + b.amount, 0);
   const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0);
@@ -39,6 +44,46 @@ export default function BudgetScreen() {
   const clampedPercent = Math.min(Math.max(overallPercent, 0), 100);
   const strokeDashoffset = circumference - (clampedPercent / 100) * circumference;
 
+  const handleOpenAddModal = () => {
+    setEditingBudgetId(null);
+    setSelectedCat(EXPENSE_CATEGORIES[0].name);
+    const existing = budgets.find(
+      (b) => b.category.toLowerCase() === EXPENSE_CATEGORIES[0].name.toLowerCase()
+    );
+    setBudgetAmountStr(existing ? String(existing.amount) : '');
+    setModalVisible(true);
+  };
+
+  const handleEditBudget = (b: (typeof budgets)[0]) => {
+    setEditingBudgetId(b.id);
+    setSelectedCat(b.category);
+    setBudgetAmountStr(String(b.amount));
+    setModalVisible(true);
+  };
+
+  const handleDeleteBudget = () => {
+    const targetId = editingBudgetId || existingBudget?.id;
+    if (!targetId) return;
+
+    Alert.alert(
+      'Delete Budget',
+      `Are you sure you want to delete the budget for ${selectedCat}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deleteBudget(targetId);
+            setModalVisible(false);
+            setEditingBudgetId(null);
+            setBudgetAmountStr('');
+          },
+        },
+      ]
+    );
+  };
+
   const handleSaveBudget = () => {
     const amount = parseFloat(budgetAmountStr.replace(/[^0-9.]/g, ''));
     if (isNaN(amount) || amount <= 0) {
@@ -48,6 +93,7 @@ export default function BudgetScreen() {
 
     setBudget(selectedCat, amount);
     setBudgetAmountStr('');
+    setEditingBudgetId(null);
     setModalVisible(false);
   };
 
@@ -57,7 +103,7 @@ export default function BudgetScreen() {
         <Text style={[styles.headerTitle, { color: colors.text }]}>Budget</Text>
         <TouchableOpacity
           style={[styles.filterBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          onPress={() => setModalVisible(true)}
+          onPress={handleOpenAddModal}
         >
           <Ionicons name="add" size={22} color={colors.primary} />
         </TouchableOpacity>
@@ -122,7 +168,7 @@ export default function BudgetScreen() {
 
         <View style={styles.byCategoryHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>By Category</Text>
-          <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <TouchableOpacity onPress={handleOpenAddModal}>
             <Text style={[styles.editAllText, { color: colors.primary }]}>+ ADD BUDGET</Text>
           </TouchableOpacity>
         </View>
@@ -138,7 +184,7 @@ export default function BudgetScreen() {
             </Text>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={() => setModalVisible(true)}
+              onPress={handleOpenAddModal}
               style={[styles.setFirstBudgetBtn, { backgroundColor: colors.primary }]}
             >
               <Ionicons name="add" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
@@ -153,7 +199,22 @@ export default function BudgetScreen() {
             const meta = getCategoryMeta(b.category, 'expense');
 
             return (
-              <View key={b.id} style={[styles.catCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <TouchableOpacity
+                key={b.id}
+                activeOpacity={0.75}
+                onPress={() => handleEditBudget(b)}
+                onLongPress={() => {
+                  Alert.alert(
+                    'Delete Budget',
+                    `Delete monthly budget for ${b.category}?`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteBudget(b.id) },
+                    ]
+                  );
+                }}
+                style={[styles.catCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              >
                 <View style={styles.catTop}>
                   <View style={styles.catTitleLeft}>
                     <View style={[styles.catIconBox, { backgroundColor: meta.bg }]}>
@@ -171,9 +232,12 @@ export default function BudgetScreen() {
                     </View>
                   </View>
 
-                  <Text style={[styles.percentBadge, { color }]}>
-                    {Math.round(b.percentage)}%
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.percentBadge, { color }]}>
+                      {Math.round(b.percentage)}%
+                    </Text>
+                    <Ionicons name="create-outline" size={16} color={colors.textMuted} />
+                  </View>
                 </View>
 
                 <View style={[styles.track, { backgroundColor: colors.surfaceElevated }]}>
@@ -203,7 +267,7 @@ export default function BudgetScreen() {
                     <Ionicons name="checkmark-circle" size={16} color="#34D399" />
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
@@ -216,7 +280,10 @@ export default function BudgetScreen() {
         transparent
         animationType="slide"
         statusBarTranslucent
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => {
+          setModalVisible(false);
+          setEditingBudgetId(null);
+        }}
       >
         <KeyboardAvoidingView
           behavior="padding"
@@ -226,7 +293,10 @@ export default function BudgetScreen() {
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
-            onPress={() => setModalVisible(false)}
+            onPress={() => {
+              setModalVisible(false);
+              setEditingBudgetId(null);
+            }}
           />
           <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <ScrollView
@@ -235,20 +305,42 @@ export default function BudgetScreen() {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Set Category Budget</Text>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  {editingBudgetId || existingBudget ? 'Edit Category Budget' : 'Set Category Budget'}
+                </Text>
+                <TouchableOpacity onPress={() => {
+                  setModalVisible(false);
+                  setEditingBudgetId(null);
+                }}>
                   <Ionicons name="close" size={22} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.modalLabel, { color: colors.textMuted }]}>Select Category</Text>
+              {existingBudget && (
+                <View style={[styles.existingBadge, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
+                  <Ionicons name="information-circle-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={[styles.existingBadgeText, { color: colors.primary }]}>
+                    Current limit: {formatCurrency(existingBudget.amount, currency.symbol)} (Spent: {formatCurrency(existingBudget.spent, currency.symbol)})
+                  </Text>
+                </View>
+              )}
+
+              <Text style={[styles.modalLabel, { color: colors.textMuted, marginTop: existingBudget ? 12 : 0 }]}>Select Category</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryPicker}>
                 {EXPENSE_CATEGORIES.map((c) => {
                   const isSelected = selectedCat.toLowerCase() === c.name.toLowerCase();
                   return (
                     <TouchableOpacity
                       key={c.id}
-                      onPress={() => setSelectedCat(c.name)}
+                      onPress={() => {
+                        setSelectedCat(c.name);
+                        const found = budgets.find((b) => b.category.toLowerCase() === c.name.toLowerCase());
+                        if (found) {
+                          setBudgetAmountStr(String(found.amount));
+                        } else if (!editingBudgetId) {
+                          setBudgetAmountStr('');
+                        }
+                      }}
                       style={[
                         styles.pickerChip,
                         { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
@@ -284,8 +376,21 @@ export default function BudgetScreen() {
                 onPress={handleSaveBudget}
                 style={styles.modalSaveBtn}
               >
-                <Text style={styles.modalSaveText}>Save Budget</Text>
+                <Text style={styles.modalSaveText}>
+                  {editingBudgetId || existingBudget ? 'Update Budget' : 'Save Budget'}
+                </Text>
               </TouchableOpacity>
+
+              {(editingBudgetId || existingBudget) && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleDeleteBudget}
+                  style={styles.modalDeleteBtn}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#FB7185" style={{ marginRight: 6 }} />
+                  <Text style={styles.modalDeleteText}>Delete Budget</Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -565,6 +670,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  modalDeleteBtn: {
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FB718540',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  modalDeleteText: {
+    color: '#FB7185',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  existingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  existingBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
   },
   emptyBudgetCard: {
     borderRadius: 22,

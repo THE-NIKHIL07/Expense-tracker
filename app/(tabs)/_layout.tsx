@@ -58,6 +58,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="goals"
+        options={{
+          title: 'GOALS',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'flag' : 'flag-outline'}
+              size={22}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="budget"
         options={{
           title: 'BUDGET',

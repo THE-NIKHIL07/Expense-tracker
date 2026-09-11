@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,22 +18,33 @@ import { MonthlySpendingDonut } from '../../src/components/charts/MonthlySpendin
 import { TransactionCard } from '../../src/components/TransactionCard';
 import { EmptyState } from '../../src/components/EmptyState';
 import { TimeframeSelector, Timeframe } from '../../src/components/TimeframeSelector';
+import { NotificationModal } from '../../src/components/NotificationModal';
+import { ChatbotModal } from '../../src/components/ChatbotModal';
 import { MONTH_NAMES, formatDateISO } from '../../src/utils/date';
 import { Transaction } from '../../src/db/schema';
+import { SettingsRepository } from '../../src/db/repository';
 
 export default function DashboardScreen() {
-  const { colors } = useTheme();
+  const { colors, currency } = useTheme();
   const {
     transactions,
     summary,
     recentTransactions,
     categorySpending,
+    addTransaction,
     deleteTransaction,
     selectedMonth,
     selectedYear,
+    notifications,
+    unreadCount,
+    markAllNotificationsRead,
+    isAiEnabled,
   } = useExpenses();
   const router = useRouter();
+
   const [timeframe, setTimeframe] = useState<Timeframe>('week');
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+  const [chatbotModalVisible, setChatbotModalVisible] = useState(false);
 
   const monthName = MONTH_NAMES[selectedMonth - 1] || 'December';
 
@@ -73,12 +85,14 @@ export default function DashboardScreen() {
         catMap.set(t.category, (catMap.get(t.category) || 0) + t.amount);
       });
 
-    const cats = Array.from(catMap.entries()).map(([category, amount]) => ({
-      category,
-      amount,
-      count: filtered.filter((t) => t.category === category).length,
-      percentage: expense > 0 ? Math.round((amount / expense) * 100) : 0,
-    })).sort((a, b) => b.amount - a.amount);
+    const cats = Array.from(catMap.entries())
+      .map(([category, amount]) => ({
+        category,
+        amount,
+        count: filtered.filter((t) => t.category === category).length,
+        percentage: expense > 0 ? Math.round((amount / expense) * 100) : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
 
     return {
       income: timeframe === 'week' || timeframe === 'month' ? income : summary.totalIncome,
@@ -100,6 +114,31 @@ export default function DashboardScreen() {
           <Text style={[styles.dateSubtitle, { color: colors.textSecondary }]}>
             {monthName} {selectedYear}
           </Text>
+        </View>
+
+        <View style={styles.headerIconsRow}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setChatbotModalVisible(true)}
+            style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Ionicons name="sparkles" size={19} color="#A855F7" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setNotificationModalVisible(true)}
+            style={[styles.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Ionicons name="notifications-outline" size={20} color={colors.text} />
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -176,6 +215,23 @@ export default function DashboardScreen() {
       >
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
+
+      <NotificationModal
+        visible={notificationModalVisible}
+        onClose={() => setNotificationModalVisible(false)}
+        notifications={notifications}
+        onMarkAllAsRead={markAllNotificationsRead}
+      />
+
+      <ChatbotModal
+        visible={chatbotModalVisible}
+        onClose={() => setChatbotModalVisible(false)}
+        onOpenSettings={() => {
+          setChatbotModalVisible(false);
+          router.push('/(tabs)/settings');
+        }}
+        isAiEnabled={isAiEnabled}
+      />
     </SafeAreaView>
   );
 }
@@ -204,6 +260,37 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
     marginTop: 2,
+  },
+  headerIconsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    backgroundColor: '#EF4444',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
   },
   scrollContent: {
     paddingHorizontal: 20,
