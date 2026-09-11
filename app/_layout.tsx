@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { ExpenseProvider } from '../src/context/ExpenseContext';
+import { BiometricGuard } from '../src/components/BiometricGuard';
 
 function RootNavigation() {
   const { isDark, colors } = useTheme();
@@ -44,7 +45,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <ExpenseProvider>
-          <RootNavigation />
+          <BiometricGuard>
+            <RootNavigation />
+          </BiometricGuard>
         </ExpenseProvider>
       </ThemeProvider>
     </SafeAreaProvider>
