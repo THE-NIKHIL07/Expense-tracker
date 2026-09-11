@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Transaction } from '../db/schema';
 import { useTheme } from '../theme/ThemeContext';
@@ -20,12 +20,25 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
   const { currency, colors } = useTheme();
   const meta = getCategoryMeta(transaction.category, transaction.type);
   const isIncome = transaction.type === 'income';
+  const method = transaction.payment_method || 'cash';
+
+  const handleLongPress = () => {
+    if (!onDelete) return;
+    Alert.alert(
+      'Delete Transaction',
+      `Are you sure you want to delete this ${formatCurrency(transaction.amount, currency.symbol)} transaction?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: onDelete },
+      ]
+    );
+  };
 
   return (
     <TouchableOpacity
       activeOpacity={0.75}
       onPress={onPress}
-      onLongPress={onDelete}
+      onLongPress={handleLongPress}
       style={[
         styles.card,
         { backgroundColor: colors.surface, borderColor: colors.border },
@@ -36,12 +49,24 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
       </View>
 
       <View style={styles.detailsContainer}>
-        <Text
-          style={[styles.titleText, { color: colors.text }]}
-          numberOfLines={1}
-        >
-          {transaction.note || transaction.category}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text
+            style={[styles.titleText, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {transaction.note || transaction.category}
+          </Text>
+          {method === 'upi' && (
+            <View style={[styles.methodBadge, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
+              <Text style={[styles.methodText, { color: '#A855F7' }]}>UPI</Text>
+            </View>
+          )}
+          {method === 'card' && (
+            <View style={[styles.methodBadge, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
+              <Text style={[styles.methodText, { color: '#38BDF8' }]}>CARD</Text>
+            </View>
+          )}
+        </View>
         <Text
           style={[styles.subtitleText, { color: colors.textSecondary }]}
           numberOfLines={1}
@@ -89,11 +114,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 3,
+  },
+  methodBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 6,
+  },
+  methodText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
   titleText: {
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 3,
+    flexShrink: 1,
   },
   subtitleText: {
     fontSize: 12,

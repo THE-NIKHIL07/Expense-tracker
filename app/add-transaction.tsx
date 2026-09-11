@@ -18,8 +18,9 @@ import { useTheme } from '../src/theme/ThemeContext';
 import { useExpenses } from '../src/context/ExpenseContext';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../src/constants/categories';
 import { CategoryGrid } from '../src/components/CategoryGrid';
-import { formatDateISO, formatFriendlyDate, getDaysInMonth, MONTH_NAMES } from '../src/utils/date';
+import { formatDateISO, formatFriendlyDate } from '../src/utils/date';
 import { TransactionType } from '../src/db/schema';
+import { DatePickerModal } from '../src/components/common/DatePickerModal';
 
 export default function AddTransactionScreen() {
   const { currency, colors } = useTheme();
@@ -37,9 +38,6 @@ export default function AddTransactionScreen() {
   const [date, setDate] = useState<string>(formatDateISO(new Date()));
   const [datePickerVisible, setDatePickerVisible] = useState(false);
 
-  const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
-  const [pickerMonth, setPickerMonth] = useState(new Date().getMonth() + 1);
-
   const isEditing = !!editId;
 
   const categories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
@@ -52,11 +50,6 @@ export default function AddTransactionScreen() {
         setAmountStr(String(existing.amount));
         setNote(existing.note || '');
         setDate(existing.date);
-        const parts = existing.date.split('-');
-        if (parts.length === 3) {
-          setPickerYear(parseInt(parts[0], 10));
-          setPickerMonth(parseInt(parts[1], 10));
-        }
 
         const list = existing.type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
         const matched = list.find(
@@ -106,6 +99,11 @@ export default function AddTransactionScreen() {
       return;
     }
 
+    if (date > formatDateISO(new Date())) {
+      Alert.alert('Future Date Not Allowed', 'Transactions cannot be recorded for future days.');
+      return;
+    }
+
     if (isEditing && editId) {
       updateTransaction(editId, {
         amount: numAmount,
@@ -146,25 +144,6 @@ export default function AddTransactionScreen() {
         },
       ]
     );
-  };
-
-  const daysInCurMonth = getDaysInMonth(pickerMonth, pickerYear);
-  const daysArray = Array.from({ length: daysInCurMonth }, (_, i) => i + 1);
-
-  const handleSelectDay = (day: number) => {
-    const mStr = String(pickerMonth).padStart(2, '0');
-    const dStr = String(day).padStart(2, '0');
-    setDate(`${pickerYear}-${mStr}-${dStr}`);
-    setDatePickerVisible(false);
-  };
-
-  const setQuickDate = (offset: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() - offset);
-    setDate(formatDateISO(d));
-    setPickerYear(d.getFullYear());
-    setPickerMonth(d.getMonth() + 1);
-    setDatePickerVisible(false);
   };
 
   return (
@@ -350,128 +329,15 @@ export default function AddTransactionScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Modal
+      <DatePickerModal
         visible={datePickerVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setDatePickerVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Date</Text>
-              <TouchableOpacity onPress={() => setDatePickerVisible(false)}>
-                <Ionicons name="close" size={22} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.quickDateRow}>
-              <TouchableOpacity
-                onPress={() => setQuickDate(0)}
-                style={[
-                  styles.quickDateBtn,
-                  { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
-                  date === formatDateISO(new Date()) && styles.quickDateBtnActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.quickDateText,
-                    { color: date === formatDateISO(new Date()) ? '#FFFFFF' : colors.text },
-                  ]}
-                >
-                  Today
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setQuickDate(1)}
-                style={[
-                  styles.quickDateBtn,
-                  { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
-                ]}
-              >
-                <Text style={[styles.quickDateText, { color: colors.text }]}>Yesterday</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setQuickDate(2)}
-                style={[
-                  styles.quickDateBtn,
-                  { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
-                ]}
-              >
-                <Text style={[styles.quickDateText, { color: colors.text }]}>2 Days Ago</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.monthNavRow}>
-              <TouchableOpacity
-                onPress={() => {
-                  if (pickerMonth === 1) {
-                    setPickerMonth(12);
-                    setPickerYear((y) => y - 1);
-                  } else {
-                    setPickerMonth((m) => m - 1);
-                  }
-                }}
-                style={[styles.navBtn, { backgroundColor: colors.surfaceElevated }]}
-              >
-                <Ionicons name="chevron-back" size={20} color={colors.text} />
-              </TouchableOpacity>
-
-              <Text style={[styles.monthNavTitle, { color: colors.text }]}>
-                {MONTH_NAMES[pickerMonth - 1]} {pickerYear}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => {
-                  if (pickerMonth === 12) {
-                    setPickerMonth(1);
-                    setPickerYear((y) => y + 1);
-                  } else {
-                    setPickerMonth((m) => m + 1);
-                  }
-                }}
-                style={[styles.navBtn, { backgroundColor: colors.surfaceElevated }]}
-              >
-                <Ionicons name="chevron-forward" size={20} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.daysGrid}>
-              {daysArray.map((d) => {
-                const mStr = String(pickerMonth).padStart(2, '0');
-                const dStr = String(d).padStart(2, '0');
-                const fullIso = `${pickerYear}-${mStr}-${dStr}`;
-                const isSelected = date === fullIso;
-
-                return (
-                  <TouchableOpacity
-                    key={`day-${d}`}
-                    onPress={() => handleSelectDay(d)}
-                    style={[
-                      styles.dayCell,
-                      { backgroundColor: colors.surfaceElevated },
-                      isSelected && styles.dayCellActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.dayCellText,
-                        { color: isSelected ? '#FFFFFF' : colors.textSecondary },
-                        isSelected && { fontWeight: '800' },
-                      ]}
-                    >
-                      {d}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setDatePickerVisible(false)}
+        onSelectDate={(d) => setDate(d)}
+        selectedDate={date}
+        title="Select Date"
+        allowFuture={false}
+        allowPast={true}
+      />
     </SafeAreaView>
   );
 }
@@ -683,6 +549,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  weekdaysRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  weekdayText: {
+    width: '13%',
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
   },
   daysGrid: {
     flexDirection: 'row',
