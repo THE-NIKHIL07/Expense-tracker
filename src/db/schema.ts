@@ -1,4 +1,5 @@
 export type TransactionType = 'income' | 'expense';
+export type PaymentMethod = 'upi' | 'cash' | 'card' | 'net_banking';
 
 export interface Transaction {
   id: string;
@@ -6,8 +7,38 @@ export interface Transaction {
   type: TransactionType;
   category: string;
   note?: string;
-  date: string; 
-  created_at: number; 
+  date: string;
+  created_at: number;
+  payment_method?: PaymentMethod;
+}
+
+export interface Goal {
+  id: string;
+  title: string;
+  target_amount: number;
+  saved_amount: number;
+  due_date: string;
+  category?: string;
+  created_at: number;
+  status: 'active' | 'completed';
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'goal' | 'budget' | 'statement' | 'upi';
+  date: string;
+  read: number;
+  created_at: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: number;
+  isAi?: boolean;
 }
 
 export interface Budget {
@@ -64,4 +95,5 @@ export interface TransactionFilters {
   endDate?: string;
   limit?: number;
   offset?: number;
+  orderBy?: 'date' | 'created_at';
 }
