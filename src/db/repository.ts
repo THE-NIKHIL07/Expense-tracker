@@ -8,6 +8,9 @@ import {
   CategorySpending,
   MonthlyTrendPoint,
   TransactionFilters,
+  Goal,
+  AppNotification,
+  ChatMessage,
 } from './schema';
 import { getDaysInMonth, MONTH_NAMES_SHORT, formatDateISO } from '../utils/date';
 
@@ -21,14 +24,16 @@ export const TransactionRepository = {
   addTransaction(transaction: Omit<Transaction, 'created_at'>): Transaction {
     const db = getDatabase();
     const created_at = Date.now();
+    const paymentMethod = transaction.payment_method || 'cash';
     const newTx: Transaction = {
       ...transaction,
       created_at,
+      payment_method: paymentMethod,
     };
 
     db.runSync(
-      `INSERT INTO transactions (id, amount, type, category, note, date, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO transactions (id, amount, type, category, note, date, created_at, payment_method)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         newTx.id,
         newTx.amount,
@@ -37,6 +42,7 @@ export const TransactionRepository = {
         newTx.note || null,
         newTx.date,
         newTx.created_at,
+        paymentMethod,
       ]
     );
 
@@ -54,19 +60,22 @@ export const TransactionRepository = {
       category: transaction.category !== undefined ? transaction.category : current.category,
       note: transaction.note !== undefined ? transaction.note : current.note,
       date: transaction.date !== undefined ? transaction.date : current.date,
+      payment_method: transaction.payment_method !== undefined ? transaction.payment_method : (current.payment_method || 'cash'),
     };
 
     db.runSync(
       `UPDATE transactions
-       SET amount = ?, type = ?, category = ?, note = ?, date = ?
+       SET amount = ?, type = ?, category = ?, note = ?, date = ?, payment_method = ?
        WHERE id = ?`,
-      [updated.amount, updated.type, updated.category, updated.note || null, updated.date, id]
+      [updated.amount, updated.type, updated.category, updated.note || null, updated.date, updated.payment_method, id]
     );
   },
 
   deleteTransaction(id: string) {
     const db = getDatabase();
     db.runSync(`DELETE FROM transactions WHERE id = ?`, [id]);
+    db.execSync('PRAGMA incremental_vacuum;');
+    db.execSync('PRAGMA wal_checkpoint(TRUNCATE);');
   },
 
   clearPreviousMonthsData(): number {
@@ -75,6 +84,9 @@ export const TransactionRepository = {
     const m = String(now.getMonth() + 1).padStart(2, '0');
     const startOfMonth = `${now.getFullYear()}-${m}-01`;
     const result = db.runSync(`DELETE FROM transactions WHERE date < ?`, [startOfMonth]);
+    db.runSync(`DELETE FROM notifications WHERE read = 1`);
+    db.execSync('PRAGMA wal_checkpoint(TRUNCATE);');
+    db.execSync('VACUUM;');
     return result.changes;
   },
 
@@ -82,6 +94,11 @@ export const TransactionRepository = {
     const db = getDatabase();
     db.runSync(`DELETE FROM transactions`);
     db.runSync(`DELETE FROM budgets`);
+    db.runSync(`DELETE FROM goals`);
+    db.runSync(`DELETE FROM notifications`);
+    db.runSync(`DELETE FROM chat_messages`);
+    db.execSync('PRAGMA wal_checkpoint(TRUNCATE);');
+    db.execSync('VACUUM;');
   },
 
   getTransactions(filters: TransactionFilters = {}): Transaction[] {
@@ -121,7 +138,11 @@ export const TransactionRepository = {
       query += ` WHERE ` + conditions.join(' AND ');
     }
 
-    query += ` ORDER BY date DESC, created_at DESC`;
+    if (filters.orderBy === 'created_at') {
+      query += ` ORDER BY created_at DESC`;
+    } else {
+      query += ` ORDER BY date DESC, created_at DESC`;
+    }
 
     if (filters.limit) {
       query += ` LIMIT ${filters.limit}`;
@@ -377,6 +398,8 @@ export const BudgetRepository = {
   deleteBudget(id: string) {
     const db = getDatabase();
     db.runSync(`DELETE FROM budgets WHERE id = ?`, [id]);
+    db.execSync('PRAGMA incremental_vacuum;');
+    db.execSync('PRAGMA wal_checkpoint(TRUNCATE);');
   },
 };
 
@@ -394,5 +417,143 @@ export const SettingsRepository = {
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
       [key, value]
     );
+  },
+};
+
+export const StorageRepository = {
+  vacuumDatabase() {
+    const db = getDatabase();
+    db.execSync('PRAGMA incremental_vacuum;');
+    db.execSync('PRAGMA wal_checkpoint(TRUNCATE);');
+    db.execSync('VACUUM;');
+  },
+};
+
+export const GoalRepository = {
+  addGoal(goal: Omit<Goal, 'created_at'>): Goal {
+    const db = getDatabase();
+    const created_at = Date.now();
+    const newGoal: Goal = { ...goal, created_at };
+    db.runSync(
+      `INSERT INTO goals (id, title, target_amount, saved_amount, due_date, category, created_at, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        newGoal.id,
+        newGoal.title,
+        newGoal.target_amount,
+        newGoal.saved_amount,
+        newGoal.due_date,
+        newGoal.category || null,
+        newGoal.created_at,
+        newGoal.status,
+      ]
+    );
+    return newGoal;
+  },
+
+  updateGoal(id: string, updates: Partial<Omit<Goal, 'id' | 'created_at'>>) {
+    const db = getDatabase();
+    const current = db.getFirstSync<Goal>(`SELECT * FROM goals WHERE id = ?`, [id]);
+    if (!current) return;
+    const title = updates.title !== undefined ? updates.title : current.title;
+    const target_amount = updates.target_amount !== undefined ? updates.target_amount : current.target_amount;
+    const saved_amount = updates.saved_amount !== undefined ? updates.saved_amount : current.saved_amount;
+    const due_date = updates.due_date !== undefined ? updates.due_date : current.due_date;
+    const category = updates.category !== undefined ? updates.category : current.category;
+    const status = updates.status !== undefined ? updates.status : current.status;
+    db.runSync(
+      `UPDATE goals SET title = ?, target_amount = ?, saved_amount = ?, due_date = ?, category = ?, status = ? WHERE id = ?`,
+      [title, target_amount, saved_amount, due_date, category || null, status, id]
+    );
+  },
+
+  deleteGoal(id: string) {
+    const db = getDatabase();
+    db.runSync(`DELETE FROM goals WHERE id = ?`, [id]);
+    db.execSync('PRAGMA incremental_vacuum;');
+    db.execSync('PRAGMA wal_checkpoint(TRUNCATE);');
+  },
+
+  getGoals(): Goal[] {
+    const db = getDatabase();
+    return db.getAllSync<Goal>(`SELECT * FROM goals ORDER BY due_date ASC`);
+  },
+};
+
+export const NotificationRepository = {
+  addNotification(title: string, message: string, type: 'goal' | 'budget' | 'statement' | 'upi'): AppNotification {
+    const db = getDatabase();
+    const id = `notif_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const created_at = Date.now();
+    const date = formatDateISO(new Date());
+    const notif: AppNotification = { id, title, message, type, date, read: 0, created_at };
+    db.runSync(
+      `INSERT INTO notifications (id, title, message, type, date, read, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, title, message, type, date, 0, created_at]
+    );
+    return notif;
+  },
+
+  getNotifications(limit = 30): AppNotification[] {
+    const db = getDatabase();
+    return db.getAllSync<AppNotification>(`SELECT * FROM notifications ORDER BY created_at DESC LIMIT ?`, [limit]);
+  },
+
+  getUnreadCount(): number {
+    const db = getDatabase();
+    const row = db.getFirstSync<{ count: number }>(`SELECT COUNT(*) as count FROM notifications WHERE read = 0`);
+    return row?.count || 0;
+  },
+
+  markAllAsRead() {
+    const db = getDatabase();
+    db.runSync(`UPDATE notifications SET read = 1 WHERE read = 0`);
+  },
+
+  deleteNotification(id: string) {
+    const db = getDatabase();
+    db.runSync(`DELETE FROM notifications WHERE id = ?`, [id]);
+  },
+
+  clearAll() {
+    const db = getDatabase();
+    db.runSync(`DELETE FROM notifications`);
+  },
+};
+
+export const ChatRepository = {
+  addMessage(msg: ChatMessage) {
+    const db = getDatabase();
+    db.runSync(
+      `INSERT OR REPLACE INTO chat_messages (id, text, sender, timestamp, isAi) VALUES (?, ?, ?, ?, ?)`,
+      [msg.id, msg.text, msg.sender, msg.timestamp, msg.isAi ? 1 : 0]
+    );
+    db.runSync(
+      `DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM (SELECT id FROM chat_messages ORDER BY timestamp DESC LIMIT 10))`
+    );
+  },
+
+  getRecentMessages(limit = 10): ChatMessage[] {
+    const db = getDatabase();
+    db.runSync(
+      `DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM (SELECT id FROM chat_messages ORDER BY timestamp DESC LIMIT ?) )`,
+      [limit]
+    );
+    const rows = db.getAllSync<{ id: string; text: string; sender: 'user' | 'bot'; timestamp: number; isAi: number }>(
+      `SELECT * FROM (SELECT * FROM chat_messages ORDER BY timestamp DESC LIMIT ?) ORDER BY timestamp ASC`,
+      [limit]
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      text: r.text,
+      sender: r.sender,
+      timestamp: r.timestamp,
+      isAi: r.isAi === 1,
+    }));
+  },
+
+  clearChat() {
+    const db = getDatabase();
+    db.runSync(`DELETE FROM chat_messages`);
   },
 };
